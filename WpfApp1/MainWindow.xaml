@@ -5,8 +5,34 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfApp1"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Транспортная задача" Height="640" Width="980"
+        MinHeight="520" MinWidth="820"
+        WindowStartupLocation="CenterScreen"
+        Background="#F4F5F7">
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="230"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
+        <Border Grid.Column="0" Background="White" BorderBrush="#E1E4E8" BorderThickness="0,0,1,0" Padding="14,20">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Margin="6,0,0,24">
+                    <TextBlock Text="Транспортная задача" FontSize="16" FontWeight="Bold" Foreground="#111827"/>
+                    <TextBlock Text="Методы решения" FontSize="12" Foreground="#6B7280" Margin="0,3,0,0"/>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Top">
+                    <TextBlock Text="ОПОРНЫЙ ПЛАН" FontSize="11" FontWeight="SemiBold" Foreground="#9CA3AF" Margin="12,0,0,6"/>
+                    <RadioButton x:Name="NavNorthWest" Content="Северо-западный угол" Style="{StaticResource NavRadioButton}" IsChecked="True" Checked="NavNorthWest_Checked"/>
+                    <RadioButton x:Name="NavMinElement" Content="Минимальный элемент" Style="{StaticResource NavRadioButton}" Checked="NavMinElement_Checked"/>
+
+                    <TextBlock Text="ОПТИМИЗАЦИЯ" FontSize="11" FontWeight="SemiBold" Foreground="#9CA3AF" Margin="12,18,0,6"/>
+                    <RadioButton x:Name="NavPotentials" Content="Метод потенциалов" Style="{StaticResource NavRadioButton}" Checked="NavPotentials_Checked"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Frame x:Name="MainFrame" Grid.Column="1" NavigationUIVisibility="Hidden"/>
     </Grid>
 </Window>

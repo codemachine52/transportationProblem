@@ -1,0 +1,60 @@
+﻿<Page x:Class="WpfApp1.Pages.PotentialsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:WpfApp1.Pages"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="PotentialsPage">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24">
+        <StackPanel MaxWidth="920">
+            <TextBlock Text="Метод потенциалов" FontSize="20" FontWeight="Bold" Foreground="#111827"/>
+            <TextBlock Text="Нахождение оптимального плана перевозок с минимальной суммарной стоимостью." FontSize="13" Foreground="#6B7280" Margin="0,4,0,18"/>
+
+            <Border Style="{StaticResource CardBorder}" Margin="0,0,0,16">
+                <WrapPanel VerticalAlignment="Center">
+                    <TextBlock Text="Поставщики (M):" VerticalAlignment="Center" FontSize="13" Margin="0,0,6,0"/>
+                    <TextBox x:Name="RowsBox" Style="{StaticResource CellTextBox}" Width="44" Margin="0,0,16,0"/>
+                    <TextBlock Text="Потребители (N):" VerticalAlignment="Center" FontSize="13" Margin="0,0,6,0"/>
+                    <TextBox x:Name="ColsBox" Style="{StaticResource CellTextBox}" Width="44" Margin="0,0,16,0"/>
+                    <Button Content="Изменить размер" Style="{StaticResource SecondaryButton}" Click="BuildGrid_Click" Margin="0,0,16,0"/>
+                    <Button Content="Очистить" Style="{StaticResource SecondaryButton}" Click="ClearGrid_Click" Margin="0,0,8,0"/>
+
+                    <TextBlock Text="Опорный план:" VerticalAlignment="Center" FontSize="13" Margin="0,16,8,0"/>
+                    <ComboBox x:Name="BasePlanCombo" Width="195" Height="32" VerticalContentAlignment="Center" FontSize="13" Margin="0,20,12,0">
+                        <ComboBoxItem Content="Минимальный элемент" IsSelected="True"/>
+                        <ComboBoxItem Content="Северо-западный угол"/>
+                    </ComboBox>
+
+                    <Button Content="Найти оптимальный план" Style="{StaticResource PrimaryButton}" Click="Solve_Click" Margin="0,10,0,0"/>
+                </WrapPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorder}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Исходные данные" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <Grid x:Name="InputMatrixGrid"/>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+
+            <Border x:Name="ResultCard" Style="{StaticResource CardBorder}" Visibility="Collapsed">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,10">
+                        <TextBlock Text="Оптимальный план перевозок" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Border Background="#EFF6FF" CornerRadius="4" Padding="10,5" HorizontalAlignment="Right">
+                            <TextBlock x:Name="TotalCostText" FontSize="14" FontWeight="Bold" Foreground="#1D4ED8"/>
+                        </Border>
+                    </DockPanel>
+                    <TextBlock x:Name="BalanceInfoText" FontSize="12.5" Foreground="#4B5563" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <Grid x:Name="OutputMatrixGrid"/>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>
