@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -270,7 +270,7 @@ namespace WpfApp1.Models
         private static bool TryParseNum(string text, out double val)
         {
             text = text?.Trim().Replace(',', '.');
-            return double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out val) && val >= 0;
+            return double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out val) && double.IsFinite(val) && val >= 0;
         }
         private static void AddHeaderCell(Grid grid, string text, int row, int col, string bgHex, string fgHex = "#374151")
         {

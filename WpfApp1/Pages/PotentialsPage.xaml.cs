@@ -1,29 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using WpfApp1.Models;
 
 namespace WpfApp1.Pages
 {
-    /// <summary>
-    /// Логика взаимодействия для PotentialsPage.xaml
-    /// </summary>
     public partial class PotentialsPage : Page
     {
         private TextBox[,] _costBoxes;
         private TextBox[] _supplyBoxes;
         private TextBox[] _demandBoxes;
+        private TransportResult? _lastResult;
+        private string _lastBasePlanName = "Минимальный элемент";
 
         public PotentialsPage()
         {
@@ -44,6 +31,7 @@ namespace WpfApp1.Pages
             MatrixUiHelper.TryReadAndSaveState(_costBoxes, _supplyBoxes, _demandBoxes, out _, out _, out _);
             TransportState.Rows = r;
             TransportState.Cols = c;
+            _lastResult = null;
             ResultCard.Visibility = Visibility.Collapsed;
             MatrixUiHelper.BuildInputMatrix(InputMatrixGrid, r, c,
                 (Style)FindResource("CellTextBox"), out _costBoxes, out _supplyBoxes, out _demandBoxes);
@@ -57,18 +45,26 @@ namespace WpfApp1.Pages
                 return;
             }
             bool useMinElement = BasePlanCombo.SelectedIndex == 0;
-            var res = TransportSolver.Solve(s, d, c, useMinElement: useMinElement, optimizeModi: true);
+            _lastBasePlanName = useMinElement ? "Минимальный элемент" : "Северо-западный угол";
+            _lastResult = TransportSolver.Solve(s, d, c, useMinElement: useMinElement, optimizeModi: true);
             ResultCard.Visibility = Visibility.Visible;
-            TotalCostText.Text = $"Оптимальная стоимость F = {res.TotalCost:0.##}";
-            BalanceInfoText.Text = res.InfoNote;
-            MatrixUiHelper.RenderResultMatrix(OutputMatrixGrid, res);
+            TotalCostText.Text = $"Оптимальная стоимость F = {_lastResult.TotalCost:0.##}";
+            BalanceInfoText.Text = _lastResult.InfoNote;
+            MatrixUiHelper.RenderResultMatrix(OutputMatrixGrid, _lastResult);
         }
+
         private void ClearGrid_Click(object sender, RoutedEventArgs e)
         {
             MatrixUiHelper.ClearState();
+            _lastResult = null;
             ResultCard.Visibility = Visibility.Collapsed;
             MatrixUiHelper.BuildInputMatrix(InputMatrixGrid, TransportState.Rows, TransportState.Cols,
                 (Style)FindResource("CellTextBox"), out _costBoxes, out _supplyBoxes, out _demandBoxes);
+        }
+
+        private void ExportExcel_Click(object sender, RoutedEventArgs e)
+        {
+            ExcelExporter.ExportWithDialog(_lastResult, $"Метод потенциалов (опорный: {_lastBasePlanName})", "Метод_потенциалов");
         }
     }
 }

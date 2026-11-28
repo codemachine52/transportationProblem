@@ -1,4 +1,4 @@
-﻿<Page x:Class="WpfApp1.Pages.PotentialsPage"
+<Page x:Class="WpfApp1.Pages.PotentialsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -44,10 +44,13 @@
             <Border x:Name="ResultCard" Style="{StaticResource CardBorder}" Visibility="Collapsed">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,10">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Background="#EFF6FF" CornerRadius="4" Padding="10,5" Margin="0,0,10,0" VerticalAlignment="Center">
+                                <TextBlock x:Name="TotalCostText" FontSize="14" FontWeight="Bold" Foreground="#1D4ED8"/>
+                            </Border>
+                            <Button Content="Экспорт в Excel" Style="{StaticResource SecondaryButton}" Click="ExportExcel_Click"/>
+                        </StackPanel>
                         <TextBlock Text="Оптимальный план перевозок" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <Border Background="#EFF6FF" CornerRadius="4" Padding="10,5" HorizontalAlignment="Right">
-                            <TextBlock x:Name="TotalCostText" FontSize="14" FontWeight="Bold" Foreground="#1D4ED8"/>
-                        </Border>
                     </DockPanel>
                     <TextBlock x:Name="BalanceInfoText" FontSize="12.5" Foreground="#4B5563" TextWrapping="Wrap" Margin="0,0,0,12"/>
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">

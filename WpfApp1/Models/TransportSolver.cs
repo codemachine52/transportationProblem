@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -6,14 +6,18 @@ namespace WpfApp1.Models
 {
     public class TransportResult
     {
-        public double[,] Allocation { get; set; }
-        public double[,] BalancedCosts { get; set; }
-        public double[] BalancedSupply { get; set; }
-        public double[] BalancedDemand { get; set; }
+        public double[,] InitialAllocation { get; set; } = new double[0, 0];
+        public double[,] Allocation { get; set; } = new double[0, 0];
+        public double[,] BalancedCosts { get; set; } = new double[0, 0];
+        public double[] BalancedSupply { get; set; } = Array.Empty<double>();
+        public double[] BalancedDemand { get; set; } = Array.Empty<double>();
         public double InitialCost { get; set; }
         public double TotalCost { get; set; }
-        public string InfoNote { get; set; }
+        public string InfoNote { get; set; } = string.Empty;
         public int OptimizationIterations { get; set; }
+        public bool IsOptimized { get; set; }
+        public int DummyRowIndex { get; set; } = -1;
+        public int DummyColIndex { get; set; } = -1;
     }
 
     internal static class TransportSolver
@@ -22,14 +26,15 @@ namespace WpfApp1.Models
 
         public static TransportResult Solve(double[] supply, double[] demand, double[,] costs, bool useMinElement, bool optimizeModi)
         {
-            var (s, d, c, note) = Balance(supply, demand, costs);
+            var (s, d, c, note, dummyRow, dummyCol) = Balance(supply, demand, costs);
             int m = s.Length, n = d.Length;
 
             var basis = new bool[m, n];
             var alloc = useMinElement
-                ? BuildMinElement(s, d, c, basis)
+                ? BuildMinElement(s, d, c, basis, dummyRow, dummyCol)
                 : BuildNorthWest(s, d, basis);
 
+            var initialAlloc = (double[,])alloc.Clone();
             double initialCost = CalcCost(alloc, c);
             int iterations = 0;
 
@@ -45,6 +50,7 @@ namespace WpfApp1.Models
 
             return new TransportResult
             {
+                InitialAllocation = initialAlloc,
                 Allocation = alloc,
                 BalancedCosts = c,
                 BalancedSupply = s,
@@ -52,17 +58,21 @@ namespace WpfApp1.Models
                 InitialCost = initialCost,
                 TotalCost = finalCost,
                 OptimizationIterations = iterations,
+                IsOptimized = optimizeModi,
+                DummyRowIndex = dummyRow,
+                DummyColIndex = dummyCol,
                 InfoNote = note + optText
             };
         }
 
-        private static (double[] s, double[] d, double[,] c, string note) Balance(double[] supply, double[] demand, double[,] costs)
+        private static (double[] s, double[] d, double[,] c, string note, int dummyRow, int dummyCol) Balance(
+            double[] supply, double[] demand, double[,] costs)
         {
             double sumS = supply.Sum(), sumD = demand.Sum();
             int m = supply.Length, n = demand.Length;
 
             if (Math.Abs(sumS - sumD) < Eps)
-                return ((double[])supply.Clone(), (double[])demand.Clone(), (double[,])costs.Clone(), "Задача закрытая.");
+                return ((double[])supply.Clone(), (double[])demand.Clone(), (double[,])costs.Clone(), "Задача закрытая.", -1, -1);
 
             if (sumS > sumD)
             {
@@ -73,7 +83,7 @@ namespace WpfApp1.Models
                 var nc = new double[m, n + 1];
                 for (int i = 0; i < m; i++)
                     for (int j = 0; j < n; j++) nc[i, j] = costs[i, j];
-                return ((double[])supply.Clone(), nd, nc, $"Добавлен фиктивный потребитель B{n + 1} ({diff}).");
+                return ((double[])supply.Clone(), nd, nc, $"Добавлен фиктивный потребитель B{n + 1} ({diff:0.##}).", -1, n);
             }
             else
             {
@@ -84,7 +94,7 @@ namespace WpfApp1.Models
                 var nc = new double[m + 1, n];
                 for (int i = 0; i < m; i++)
                     for (int j = 0; j < n; j++) nc[i, j] = costs[i, j];
-                return (ns, (double[])demand.Clone(), nc, $"Добавлен фиктивный поставщик A{m + 1} ({diff}).");
+                return (ns, (double[])demand.Clone(), nc, $"Добавлен фиктивный поставщик A{m + 1} ({diff:0.##}).", m, -1);
             }
         }
 
@@ -116,7 +126,7 @@ namespace WpfApp1.Models
             return alloc;
         }
 
-        private static double[,] BuildMinElement(double[] s, double[] d, double[,] c, bool[,] basis)
+        private static double[,] BuildMinElement(double[] s, double[] d, double[,] c, bool[,] basis, int dummyRow, int dummyCol)
         {
             int m = s.Length, n = d.Length;
             var remS = (double[])s.Clone();
@@ -124,20 +134,38 @@ namespace WpfApp1.Models
             var alloc = new double[m, n];
             var rClosed = new bool[m];
             var cClosed = new bool[n];
+            int openRows = m, openCols = n;
 
             for (int step = 0; step < m + n - 1; step++)
             {
                 int bi = -1, bj = -1;
                 double minC = double.MaxValue;
+
+                // Сначала ищем минимальный тариф среди реальных (не фиктивных) клеток
                 for (int i = 0; i < m; i++)
                 {
-                    if (rClosed[i]) continue;
+                    if (rClosed[i] || i == dummyRow) continue;
                     for (int j = 0; j < n; j++)
                     {
-                        if (cClosed[j]) continue;
+                        if (cClosed[j] || j == dummyCol) continue;
                         if (c[i, j] < minC) { minC = c[i, j]; bi = i; bj = j; }
                     }
                 }
+
+                // Если реальных открытых клеток не осталось — заполняем фиктивные
+                if (bi == -1)
+                {
+                    for (int i = 0; i < m; i++)
+                    {
+                        if (rClosed[i]) continue;
+                        for (int j = 0; j < n; j++)
+                        {
+                            if (cClosed[j]) continue;
+                            if (c[i, j] < minC) { minC = c[i, j]; bi = i; bj = j; }
+                        }
+                    }
+                }
+
                 if (bi == -1) break;
 
                 double x = Math.Min(remS[bi], remD[bj]);
@@ -146,8 +174,38 @@ namespace WpfApp1.Models
                 remS[bi] -= x;
                 remD[bj] -= x;
 
-                if (Math.Abs(remS[bi]) < Eps) rClosed[bi] = true;
-                else cClosed[bj] = true;
+                bool rowZero = Math.Abs(remS[bi]) < Eps;
+                bool colZero = Math.Abs(remD[bj]) < Eps;
+
+                if (rowZero && colZero)
+                {
+                    // Закрываем ту линию, которых осталось больше, чтобы не прервать цикл раньше времени
+                    if (openRows >= openCols && openRows > 1)
+                    {
+                        rClosed[bi] = true;
+                        openRows--;
+                    }
+                    else if (openCols > 1)
+                    {
+                        cClosed[bj] = true;
+                        openCols--;
+                    }
+                    else
+                    {
+                        rClosed[bi] = true;
+                        openRows--;
+                    }
+                }
+                else if (rowZero)
+                {
+                    rClosed[bi] = true;
+                    openRows--;
+                }
+                else
+                {
+                    cClosed[bj] = true;
+                    openCols--;
+                }
             }
             return alloc;
         }
@@ -157,7 +215,7 @@ namespace WpfApp1.Models
             int m = alloc.GetLength(0), n = alloc.GetLength(1);
             int iter = 0;
 
-            while (iter < 100)
+            while (iter < 1000)
             {
                 EnsureNonDegenerate(basis, c);
 
@@ -253,11 +311,13 @@ namespace WpfApp1.Models
             }
         }
 
-        private static List<(int r, int c)> FindCycle(bool[,] basis, int startR, int startC)
+        private static List<(int r, int c)>? FindCycle(bool[,] basis, int startR, int startC)
         {
             int m = basis.GetLength(0), n = basis.GetLength(1);
             var path = new List<(int r, int c)> { (startR, startC) };
 
+            // Начинаем движение по строке (горизонтально) и замыкаем цикл строго по столбцу (вертикально),
+            // что гарантирует чередование направлений и чётную длину цикла.
             bool Dfs(int r, int c, bool moveRow)
             {
                 if (moveRow)
@@ -265,7 +325,6 @@ namespace WpfApp1.Models
                     for (int nc = 0; nc < n; nc++)
                     {
                         if (nc == c) continue;
-                        if (nc == startC && r == startR && path.Count >= 4) return true;
                         if (basis[r, nc] && !path.Contains((r, nc)))
                         {
                             path.Add((r, nc));
@@ -273,14 +332,14 @@ namespace WpfApp1.Models
                             path.RemoveAt(path.Count - 1);
                         }
                     }
-
                 }
                 else
                 {
                     for (int nr = 0; nr < m; nr++)
                     {
                         if (nr == r) continue;
-                        if (nr == startR && c == startC && path.Count >= 4) return true;
+                        if (nr == startR && c == startC && path.Count >= 4 && path.Count % 2 == 0)
+                            return true;
                         if (basis[nr, c] && !path.Contains((nr, c)))
                         {
                             path.Add((nr, c));
@@ -291,12 +350,10 @@ namespace WpfApp1.Models
                 }
                 return false;
             }
-            if (Dfs(startR, startC, true)) return path;
-            path.Clear();
-            path.Add((startR, startC));
-            if (Dfs(startR, startC, false)) return path;
-            return null;
+
+            return Dfs(startR, startC, true) ? path : null;
         }
+
         private static double CalcCost(double[,] alloc, double[,] c)
         {
             double sum = 0;
